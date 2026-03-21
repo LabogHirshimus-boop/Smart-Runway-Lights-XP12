@@ -1,4 +1,5 @@
 ✈️ X-Plane 12 – Smart Runway Light Control (FlyWithLua)
+
 📌 Overview
 
 This script improves the default runway lighting behavior in X-Plane 12 by eliminating rapid on/off switching (flickering) caused by frequent weather and lighting changes.
