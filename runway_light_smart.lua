@@ -28,15 +28,23 @@ end
 -- LOGIC
 function should_lights_be_on()
 
-    if sun_pitch < SUN_THRESHOLD then
+    -- NIL SAFE VALUES
+    local sp = sun_pitch or 90
+    local vis = visibility or 99999
+    local cloud = cloud_coverage or 0
+
+    -- Night / twilight
+    if sp < SUN_THRESHOLD then
         return 1
     end
 
-    if visibility > 0 and visibility < VIS_THRESHOLD then
+    -- Low visibility
+    if vis > 0 and vis < VIS_THRESHOLD then
         return 1
     end
 
-    if cloud_coverage > CLOUD_THRESHOLD then
+    -- Heavy clouds
+    if cloud > CLOUD_THRESHOLD then
         return 1
     end
 
@@ -45,16 +53,27 @@ end
 
 function update_lights()
 
-    local t = now()
-    local desired = should_lights_be_on()
+    -- HARD GUARD (čekaj da datarefovi postoje)
+    if sun_pitch == nil then return end
 
-    -- ✅ INIT (NO DELAY)
+    local t = now()
+
+    -- SAFE desired
+    local desired = should_lights_be_on()
+    if desired == nil then return end
+
+    -- INIT (bez delay-a)
     if not initialized then
-        last_state = desired
-        target_state = desired
-        last_change_time = t
+        last_state = desired or 0
+        target_state = desired or 0
+        last_change_time = t or 0
         initialized = true
     end
+
+    -- dodatni safety (nikad nil)
+    if target_state == nil then target_state = last_state or 0 end
+    if last_state == nil then last_state = desired or 0 end
+    if last_change_time == nil then last_change_time = t end
 
     -- detect change
     if desired ~= target_state then
@@ -62,14 +81,16 @@ function update_lights()
         last_change_time = t
     end
 
-    -- apply delay only AFTER init
+    -- delay (nil-safe)
     if target_state ~= last_state then
-        if (t - last_change_time) >= DELAY_SECONDS then
-            last_state = target_state
+        if t ~= nil and last_change_time ~= nil then
+            if (t - last_change_time) >= DELAY_SECONDS then
+                last_state = target_state
+            end
         end
     end
 
-    -- apply
+    -- apply (final safety)
     if last_state == 1 then
         set("sim/graphics/scenery/airport_light_level", 1.0)
     else
